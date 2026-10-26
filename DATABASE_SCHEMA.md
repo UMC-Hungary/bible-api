@@ -65,7 +65,7 @@ This document describes the database schema for the Bible API project. The datab
 | `code` | TEXT | Verse code identifier | "GEN001001" |
 | `code_string` | TEXT | String version of code | "GEN001001" |
 
-**Row Count**: 31,529 verses (currently empty in D1)
+**Row Count**: 31,529 verses
 
 ---
 
@@ -79,7 +79,7 @@ This document describes the database schema for the Bible API project. The datab
 | `text` | TEXT | The actual verse text | "Kezdetben teremté Isten..." |
 | `trans` | INTEGER | Translation identifier | 1, 2, 3... |
 
-**Row Count**: 93,422 verse translations (currently empty in D1)
+**Row Count**: 93,422 verse translations
 
 ---
 
@@ -135,13 +135,19 @@ Defined in `migrations/0001_add_verse_lookup_indexes.sql`:
 - `idx_bible_verses_book_chapter_verse` on `bible_verses (bible_books_id, chapter, verse)`
 - `idx_bible_verse_translation_verse_trans` on `bible_verse_translation (bible_verses_id, trans)`
 
-Without them every verse lookup scans both tables (~125k rows read per query). Apply with:
+Both are applied to the production database (migration recorded 2026-10-26). They let a verse lookup read only the matching rows (typically under 25) instead of scanning both tables (~125k rows per query).
+
+To apply migrations to a new or local database:
 
 ```bash
-wrangler d1 migrations apply search_translations --remote
+wrangler d1 migrations apply search_translations --remote   # or --local
 ```
 
-Building both indexes writes roughly 125k rows, more than the free tier's 100k daily rows-written limit; on the free plan create them on separate days.
+Building these indexes counts as roughly one written row per table row (~125k in total), so on the D1 free plan (100k rows written per day) a fresh database needs them created on separate days.
+
+### `d1_migrations`
+
+Created by wrangler to track which files in `migrations/` have been applied (`id`, `name`, `applied_at`). Not used by the API.
 
 ## Data Status
 
@@ -151,6 +157,7 @@ Building both indexes writes roughly 125k rows, more than the free tier's 100k d
 - `bible_verse_translation` - 93,422 rows
 - `bible` - 0 rows
 - `bible_parts` - 0 rows
+- `d1_migrations` - 1 row (wrangler migration tracking)
 
 ## Hungarian Bible Translations
 
@@ -204,7 +211,7 @@ ORDER BY t.trans;
 
 ---
 
-*Last Updated: 2025-10-26*
+*Last Updated: 2026-10-26*
 *Database Version: Cloudflare D1*
 *API Translation Support: UF, RUF*
 
