@@ -1,0 +1,257 @@
+{
+  "info": {
+    "name": "Bible API - Rust Cloudflare Worker",
+    "description": "High-performance Bible reference parsing and verse lookup API built with Rust on Cloudflare Workers.\n\n## Features\n- Smart Bible reference parsing\n- Context-aware multi-reference parsing\n- Multi-language support\n- Real-time verse lookup\n\n## Parameters (in order)\n1. term (required) - Bible reference to parse\n2. translation (optional) - Translation code (UF or RUF)\n\n## Routes\n- /suggest/{term} - defaults to UF translation\n- /suggest/{term}/{translation} - specify translation\n\n## Base URL\n- Production: https://api.nyiregyhazimetodista.hu\n- Local: http://localhost:8787",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "bible-api"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.nyiregyhazimetodista.hu",
+      "type": "string"
+    },
+    {
+      "key": "localUrl",
+      "value": "http://localhost:8787",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Bible Reference Search",
+      "item": [
+        {
+          "name": "Simple Verse Lookup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/gen 1:1/UF",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "gen 1:1", "UF"]
+            },
+            "description": "Look up a single Bible verse by reference.\n\nParameters (in order):\n1. term (required) - Bible reference\n2. translation (optional) - Translation code\n\nExample: Genesis 1:1"
+          },
+          "response": []
+        },
+        {
+          "name": "Verse Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/jn 3:16-17",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "jn 3:16-17"]
+            },
+            "description": "Look up a range of verses in a single chapter.\n\nExample: John 3:16-17"
+          },
+          "response": []
+        },
+        {
+          "name": "Multiple References",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/1Kor 2,2-3;Jn 1,1-2",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "1Kor 2,2-3;Jn 1,1-2"]
+            },
+            "description": "Look up multiple Bible references in a single request.\n\nExample: 1 Corinthians 2:2-3 and John 1:1-2"
+          },
+          "response": []
+        },
+        {
+          "name": "Contextual Same Chapter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/mt5,1-2;5-6",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "mt5,1-2;5-6"]
+            },
+            "description": "Look up multiple verse ranges in the same chapter using contextual parsing.\n\nExample: Matthew 5:1-2 and 5-6 (implicitly Matthew 5:5-6)"
+          },
+          "response": []
+        },
+        {
+          "name": "Contextual Cross Chapter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/mt5,1-2;6,5-6",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "mt5,1-2;6,5-6"]
+            },
+            "description": "Look up verses from different chapters in the same book.\n\nExample: Matthew 5:1-2 and Matthew 6:5-6"
+          },
+          "response": []
+        },
+        {
+          "name": "Entire Chapter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/ps 23",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "ps 23"]
+            },
+            "description": "Look up an entire chapter.\n\nExample: Psalm 23"
+          },
+          "response": []
+        },
+        {
+          "name": "Compact Format",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/mt5",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "mt5"]
+            },
+            "description": "Look up using compact format without spaces.\n\nExample: mt5 = Matthew 5"
+          },
+          "response": []
+        },
+        {
+          "name": "With Translation Suffix",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/gen 1:1/UF",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "gen 1:1", "UF"]
+            },
+            "description": "Look up a verse with translation specified in the reference string.\n\nExample: gen 1:1/UF"
+          },
+          "response": []
+        },
+        {
+          "name": "RUF Translation (Path Parameter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/gen 1:1/RUF",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "gen 1:1", "RUF"]
+            },
+            "description": "Look up a verse using RUF translation via path parameter.\n\nExample: /suggest/gen 1:1/RUF"
+          },
+          "response": []
+        },
+        {
+          "name": "UF Translation (Path Parameter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest/jn 3:16/UF",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest", "jn 3:16", "UF"]
+            },
+            "description": "Look up a verse using UF translation via path parameter.\n\nExample: /suggest/jn 3:16/UF"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "Missing Term Parameter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest"]
+            },
+            "description": "Test error handling when the required 'term' parameter is missing.\n\nExpected: 400 Bad Request"
+          },
+          "response": []
+        },
+        {
+          "name": "Empty Term",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest?term=",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest"],
+              "query": [
+                {
+                  "key": "term",
+                  "value": "",
+                  "description": "Empty search term"
+                }
+              ]
+            },
+            "description": "Test error handling with an empty search term.\n\nExpected: 400 Bad Request"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Reference",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/suggest?term=invalidbook 99:99",
+              "host": ["{{baseUrl}}"],
+              "path": ["suggest"],
+              "query": [
+                {
+                  "key": "term",
+                  "value": "invalidbook 99:99",
+                  "description": "Invalid book name"
+                }
+              ]
+            },
+            "description": "Test with an invalid book name.\n\nExpected: Empty result with no parsed references"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Local Development",
+      "item": [
+        {
+          "name": "Local - Simple Verse",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{localUrl}}/suggest?term=gen 1:1&translation=UF",
+              "host": ["{{localUrl}}"],
+              "path": ["suggest"],
+              "query": [
+                {
+                  "key": "term",
+                  "value": "gen 1:1"
+                },
+                {
+                  "key": "translation",
+                  "value": "UF"
+                }
+              ]
+            },
+            "description": "Test the API on local development server.\n\nMake sure to run: make dev"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

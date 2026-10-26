@@ -1,0 +1,521 @@
+openapi: 3.0.3
+info:
+  title: Bible API - Rust Cloudflare Worker
+  description: |
+    A high-performance Bible reference parsing and verse lookup API built with Rust and deployed on Cloudflare Workers.
+    
+    ## Features
+    - **Smart Bible reference parsing**: Understands various reference formats (e.g., "gen 1:1", "1Kor 2,2-3", "mt5,1-2;6,5-6")
+    - **Context-aware parsing**: Handles semicolon-separated references with implied context
+    - **Multi-language support**: Query Bible verses in different translations
+    - **Real-time verse lookup**: Returns actual verse text from database
+    - **WebAssembly performance**: Sub-millisecond response times via WASM
+    
+    ## Reference Format Examples
+    - Single verse: `gen 1:1`, `mt 5:3`
+    - Verse range: `jn 3:16-17`, `rom 8:28-30`
+    - Multiple references: `1Kor 2,2-3;Jn 1,1-2`
+    - Contextual references: `mt5,1-2;5-6` (same chapter, different verses)
+    - Cross-chapter: `mt5,1-2;6,5-6` (same book, different chapters)
+    - Translation suffix: `gen 1:1/KG`, `mt5/en`
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://api.nyiregyhazimetodista.hu
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.nyiregyhazimetodista.hu
+    description: Production server (Cloudflare Workers)
+  - url: http://localhost:8787
+    description: Local development server
+
+tags:
+  - name: Search
+    description: Bible reference search and verse lookup operations
+
+paths:
+  /suggest/{term}:
+    get:
+      tags:
+        - Search
+      summary: Search and parse Bible references (default UF translation)
+      description: |
+        Provides search suggestions and Bible verse lookups based on the provided search term.
+        Uses the default UF translation unless specified via path parameter.
+        
+        **Parameters (in order)**:
+        1. `term` (required, path) - Bible reference to parse
+        2. `translation` (optional, path) - Translation code (UF or RUF)
+        
+        This endpoint intelligently parses various Bible reference formats and returns:
+        - Normalized reference labels
+        - Parsed reference components (book, chapter, verse ranges)
+        - Actual verse text from the database
+        
+        **Supported Reference Patterns:**
+        - Book names: `genesis`, `gen`, `matthew`, `mt`
+        - Book with chapter: `gen 1`, `mt5`
+        - Book with chapter and verse: `gen 1:1`, `mt 5:3-10`
+        - Multiple references: `1Kor 2,2-3;Jn 1,1-2`
+        - Contextual references: `mt5,1-2;5-6` (verse 1-2 and 5-6 of Matthew 5)
+        - Translation suffix: `gen 1:1/KG`, `mt 5/en`
+        
+        **Complete List of Allowed Book Names:**
+        
+        *Old Testament (39 books):*
+        - **Genesis**: gen, genesis, 1móz, 1moz, teremtés, teremtes
+        - **Exodus**: ex, exod, exodus, 2móz, 2moz, kivonulás, kivonulas
+        - **Leviticus**: lev, leviticus, 3móz, 3moz, leviták, levitak
+        - **Numbers**: num, numbers, 4móz, 4moz, számok, szamok
+        - **Deuteronomy**: deut, deuteronomy, 5móz, 5moz, törvények, torvenyek
+        - **Joshua**: josh, joshua, józs, jozs, józsué, jozsue
+        - **Judges**: judg, judges, bír, bir, bírák, birak
+        - **Ruth**: ruth, rut, rút
+        - **1 Samuel**: 1sam, 1samuel, sám1, sam1, 1sámuel, 1samuel
+        - **2 Samuel**: 2sam, 2samuel, sám2, sam2, 2sámuel, 2samuel
+        - **1 Kings**: 1kgs, 1kings, kir1, 1kir, 1királyok, 1kiralyok
+        - **2 Kings**: 2kgs, 2kings, kir2, 2kir, 2királyok, 2kiralyok
+        - **1 Chronicles**: 1chr, 1chronicles, krón1, kron1, 1krónika, 1kronika
+        - **2 Chronicles**: 2chr, 2chronicles, krón2, kron2, 2krónika, 2kronika
+        - **Ezra**: ezra, ezd, ezsdrás, ezsdras
+        - **Nehemiah**: neh, nehemiah, nehémiás, nemias
+        - **Esther**: est, esther, eszt, eszter
+        - **Job**: job, jób
+        - **Psalms**: ps, psalm, psalms, zsolt, zsoltár, zsoltárok, zsoltar, zsoltarok
+        - **Proverbs**: prov, proverbs, péld, peld, példabeszédek, peldabeszedek
+        - **Ecclesiastes**: eccl, ecclesiastes, préd, pred, prédikátor, predikator
+        - **Song of Solomon**: song, songs, én, en, énekek, enekek
+        - **Isaiah**: isa, isaiah, ézs, ezs, ézsaiás, ezsaias
+        - **Jeremiah**: jer, jeremiah, jeremiás, jeremias
+        - **Lamentations**: lam, lamentations, siral, siralmak
+        - **Ezekiel**: ezek, ezekiel, ez, ezékiel
+        - **Daniel**: dan, daniel, dán, dániel
+        - **Hosea**: hos, hosea, hós, hóseás, hoseas
+        - **Joel**: joel, jóel
+        - **Amos**: amos, ámós
+        - **Obadiah**: obad, obadiah, abd, abdiás, abdias
+        - **Jonah**: jon, jonah, jón, jónás, jonas
+        - **Micah**: mic, micah, mik, mikeás, mikeas
+        - **Nahum**: nah, nahum, náh, náhum
+        - **Habakkuk**: hab, habakkuk, hab, habakuk
+        - **Zephaniah**: zeph, zephaniah, zof, zofóniás, zofonias
+        - **Haggai**: hag, haggai, ag, aggeus
+        - **Zechariah**: zech, zechariah, zak, zakariás, zakarias
+        - **Malachi**: mal, malachi, mal, malakiás, malakias
+        
+        *New Testament (27 books):*
+        - **Matthew**: mt, matt, matthew, mát, mat, máté, mate
+        - **Mark**: mk, mark, márk
+        - **Luke**: lk, luke, luk, lukács, lukacs
+        - **John**: jn, john, ján, jan, jános, janos
+        - **Acts**: acts, csel, cselekedetek
+        - **Romans**: rom, romans, róm, rom, rómaiakhoz, romaiakhoz
+        - **1 Corinthians**: 1cor, 1corinthians, 1kor, kor1
+        - **2 Corinthians**: 2cor, 2corinthians, 2kor, kor2
+        - **Galatians**: gal, galatians, gal, galátákhoz, galatakhoz
+        - **Ephesians**: eph, ephesians, ef, efézusiakhoz, efezusiakhoz
+        - **Philippians**: phil, philippians, fil, filippiekhez
+        - **Colossians**: col, colossians, kol, kolosséiakhoz, kolosseiakhoz
+        - **1 Thessalonians**: 1thess, 1thessalonians, 1thessz, thessz1, 1tesszalonika
+        - **2 Thessalonians**: 2thess, 2thessalonians, 2thessz, thessz2, 2tesszalonika
+        - **1 Timothy**: 1tim, 1timothy, tim1, 1timóteus, 1timoteus
+        - **2 Timothy**: 2tim, 2timothy, tim2, 2timóteus, 2timoteus
+        - **Titus**: titus, tit, titusz
+        - **Philemon**: phlm, philemon, filem, filemon, filemonhoz
+        - **Hebrews**: heb, hebrews, zsid, zsidókhoz, zsidokhoz
+        - **James**: jas, james, jak, jakab
+        - **1 Peter**: 1pet, 1peter, pet1, 1pét, pét1, 1péter
+        - **2 Peter**: 2pet, 2peter, pet2, 2pét, pét2, 2péter
+        - **1 John**: 1jn, 1john, jn1, 1ján, 1jan, ján1, jan1, 1jános, 1janos
+        - **2 John**: 2jn, 2john, jn2, 2ján, 2jan, ján2, jan2, 2jános, 2janos
+        - **3 John**: 3jn, 3john, jn3, 3ján, 3jan, ján3, jan3, 3jános, 3janos
+        - **Jude**: jude, júd, júdás, judas
+        - **Revelation**: rev, revelation, jel, jelenések, jelenesek, apokalipszis
+        
+      operationId: searchSuggestions
+      
+      parameters:
+        - name: term
+          in: path
+          required: true
+          description: |
+            **[Parameter 1 - Required]** The Bible reference search term to parse and look up.
+            
+            **Examples:**
+            - `gen 1:1` - Genesis chapter 1, verse 1
+            - `1Kor 2,2-3.4` - 1 Corinthians 2:2-3,4
+            - `mt5,1-2;6,5-6` - Matthew 5:1-2 and 6:5-6
+            - `jn 3:16/en` - John 3:16 in English translation
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+          examples:
+            simple:
+              value: "gen 1:1"
+              summary: Simple verse reference
+            range:
+              value: "jn 3:16-17"
+              summary: Verse range
+            multiple:
+              value: "1Kor 2,2-3;Jn 1,1-2"
+              summary: Multiple references
+            contextual:
+              value: "mt5,1-2;5-6"
+              summary: Contextual same-chapter verses
+            withTranslation:
+              value: "gen 1:1/UF"
+              summary: Reference with translation suffix
+              
+              
+      responses:
+        '200':
+          description: Successfully parsed reference and retrieved verses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimplifiedResponse'
+              examples:
+                singleVerse:
+                  summary: Single verse lookup
+                  value:
+                    label: "gen 1:1"
+                    hungarian_label: "1Móz 1:1"
+                    link: "/gen 1:1"
+                    parsed_refs:
+                      - book: "gen"
+                        book_id: 1
+                        chapter_from: 1
+                        chapter_to: 1
+                        verse_from: 1
+                        verse_to: 1
+                    verses:
+                      - chapter: 1
+                        verse: 1
+                        text: "In the beginning God created the heaven and the earth."
+                    verses_as_text:
+                      - "In the beginning God created the heaven and the earth."
+                      
+                multipleReferences:
+                  summary: Multiple references
+                  value:
+                    label: "1Kor 2:2-3;Jn 1:1-2"
+                    hungarian_label: "1Kor 2:2-3;Jn 1:1-2"
+                    link: "/1Kor 2:2-3;Jn 1:1-2"
+                    parsed_refs:
+                      - book: "1Kor"
+                        book_id: 46
+                        chapter_from: 2
+                        chapter_to: 2
+                        verse_from: 2
+                        verse_to: 3
+                      - book: "Jn"
+                        book_id: 43
+                        chapter_from: 1
+                        chapter_to: 1
+                        verse_from: 1
+                        verse_to: 2
+                    verses:
+                      - chapter: 2
+                        verse: 2
+                        text: "For I determined not to know any thing among you..."
+                      - chapter: 2
+                        verse: 3
+                        text: "And I was with you in weakness..."
+                      - chapter: 1
+                        verse: 1
+                        text: "In the beginning was the Word..."
+                      - chapter: 1
+                        verse: 2
+                        text: "The same was in the beginning with God."
+                    verses_as_text:
+                      - "For I determined not to know any thing among you... And I was with you in weakness..."
+                      - "In the beginning was the Word... The same was in the beginning with God."
+                      
+                emptyResult:
+                  summary: No matches found
+                  value:
+                    label: ""
+                    hungarian_label: ""
+                    link: ""
+                    parsed_refs: []
+                    verses: []
+                    verses_as_text: []
+                    
+        '400':
+          description: Bad request - Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidTerm:
+                  summary: Invalid search term
+                  value:
+                    error: "Invalid reference format"
+                    
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                databaseError:
+                  summary: Database query failed
+                  value:
+                    error: "Database query error"
+
+  /suggest/{term}/{translation}:
+    get:
+      tags:
+        - Search
+      summary: Search and parse Bible references with specific translation
+      description: |
+        Provides search suggestions and Bible verse lookups with translation specified via path parameter.
+        
+        **Parameters (in order)**:
+        1. `term` (required, path) - Bible reference to parse
+        2. `translation` (required, path) - Translation code (UF or RUF)
+        
+        This allows cleaner URLs like:
+        - `/suggest/gen 1:1/UF`
+        - `/suggest/mt1,1-2/RUF`
+        
+        **Supported Reference Patterns:**
+        - Book names: `genesis`, `gen`, `matthew`, `mt`
+        - Book with chapter: `gen 1`, `mt5`
+        - Book with chapter and verse: `gen 1:1`, `mt 5:3-10`
+        - Multiple references: `1Kor 2,2-3;Jn 1,1-2`
+        - Contextual references: `mt5,1-2;5-6` (verse 1-2 and 5-6 of Matthew 5)
+        
+      operationId: searchSuggestionsWithTranslation
+      
+      parameters:
+        - name: term
+          in: path
+          required: true
+          description: |
+            **[Parameter 1 - Required]** The Bible reference search term to parse and look up.
+            
+            **Examples:**
+            - `gen 1:1` - Genesis chapter 1, verse 1
+            - `1Kor 2,2-3.4` - 1 Corinthians 2:2-3,4
+            - `mt5,1-2;6,5-6` - Matthew 5:1-2 and 6:5-6
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+          examples:
+            simple:
+              value: "gen 1:1"
+              summary: Simple verse reference
+            range:
+              value: "jn 3:16-17"
+              summary: Verse range
+            multiple:
+              value: "1Kor 2,2-3;Jn 1,1-2"
+              summary: Multiple references
+              
+        - name: translation
+          in: path
+          required: true
+          description: |
+            **[Parameter 2 - Required]** The Bible translation code to use for verse text lookup.
+            
+            **Available translations:**
+            - `UF` - Újfordítású Biblia / New Translation (trans=0)
+            - `RUF` - Revideált Új Fordítás / Revised New Translation (trans=1)
+            
+          schema:
+            type: string
+            enum: ["UF", "RUF"]
+          examples:
+            uf:
+              value: "UF"
+              summary: Újfordítású (New Translation)
+            ruf:
+              value: "RUF"
+              summary: Revideált Új Fordítás (Revised New Translation)
+              
+      responses:
+        '200':
+          description: Successfully parsed reference and retrieved verses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimplifiedResponse'
+              examples:
+                rufVerse:
+                  summary: RUF translation verse
+                  value:
+                    label: "gen 1:1"
+                    hungarian_label: "1Móz 1:1"
+                    link: "/gen 1:1"
+                    parsed_refs:
+                      - book: "gen"
+                        book_id: 1
+                        chapter_from: 1
+                        chapter_to: 1
+                        verse_from: 1
+                        verse_to: 1
+                    verses:
+                      - chapter: 1
+                        verse: 1
+                        text: "A világ teremtése Kezdetben teremtette Isten az eget és a földet."
+                    verses_as_text:
+                      - "A világ teremtése Kezdetben teremtette Isten az eget és a földet."
+                      
+        '400':
+          description: Bad request - Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidTerm:
+                  summary: Invalid search term
+                  value:
+                    error: "Invalid reference format"
+                    
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SimplifiedResponse:
+      type: object
+      description: The main response object containing parsed Bible references and verse content
+      required:
+        - label
+        - hungarian_label
+        - link
+        - parsed_refs
+        - verses
+        - verses_as_text
+      properties:
+        label:
+          type: string
+          description: Normalized, human-readable reference label (e.g., "gen 1:1", "mt 5:3-10")
+          example: "gen 1:1"
+        hungarian_label:
+          type: string
+          description: Hungarian translation of the reference label with Hungarian book names (e.g., "1Móz 1:1", "Mt 5:3-10")
+          example: "Ter 1:1"
+        link:
+          type: string
+          description: URL-friendly link path to the reference
+          example: "/gen 1:1"
+        parsed_refs:
+          type: array
+          description: Array of parsed reference components with detailed book, chapter, and verse information
+          items:
+            $ref: '#/components/schemas/ParsedReference'
+        verses:
+          type: array
+          description: Array of verse objects containing chapter, verse number, and text content
+          items:
+            $ref: '#/components/schemas/VerseResponse'
+        verses_as_text:
+          type: array
+          description: Array of combined verse texts as strings for easy display
+          items:
+            type: string
+            example: "In the beginning God created the heaven and the earth."
+            
+    ParsedReference:
+      type: object
+      description: Detailed breakdown of a Bible reference into its component parts
+      required:
+        - book
+        - book_id
+        - chapter_from
+        - chapter_to
+        - verse_from
+        - verse_to
+      properties:
+        book:
+          type: string
+          description: Book abbreviation or name (e.g., "gen", "mt", "1Kor")
+          example: "gen"
+        book_id:
+          type: integer
+          nullable: true
+          description: Internal database ID for the book (1-66 for standard Bible books)
+          example: 1
+          minimum: 1
+          maximum: 66
+        chapter_from:
+          type: integer
+          nullable: true
+          description: Starting chapter number (null if entire book)
+          example: 1
+          minimum: 1
+        chapter_to:
+          type: integer
+          nullable: true
+          description: Ending chapter number (same as chapter_from for single chapter)
+          example: 1
+          minimum: 1
+        verse_from:
+          type: integer
+          nullable: true
+          description: Starting verse number (null if entire chapter)
+          example: 1
+          minimum: 1
+        verse_to:
+          type: integer
+          nullable: true
+          description: Ending verse number (same as verse_from for single verse)
+          example: 1
+          minimum: 1
+          
+    VerseResponse:
+      type: object
+      description: A single Bible verse with its location and text content
+      required:
+        - chapter
+        - verse
+        - text
+      properties:
+        chapter:
+          type: integer
+          description: Chapter number where this verse is located
+          example: 1
+          minimum: 1
+        verse:
+          type: integer
+          description: Verse number within the chapter
+          example: 1
+          minimum: 1
+        text:
+          type: string
+          description: The actual verse text content (sanitized, HTML tags removed)
+          example: "In the beginning God created the heaven and the earth."
+          
+    ErrorResponse:
+      type: object
+      description: Error response returned when a request fails
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message describing what went wrong
+          example: "Missing search term"
+          
+  securitySchemes:
+    # No authentication required - public API
+    {}
+
+externalDocs:
+  description: Full API Documentation and Source Code
+  url: https://github.com/aronesztergomi/bible-api

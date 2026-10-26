@@ -1,0 +1,35 @@
+name = "rust-api"
+main = "build/worker/shim.mjs"
+compatibility_date = "2025-01-17"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:3000,https://*.nyiregyhazimetodista.hu,https://stream.nyiregyhazimetodista.hu,http://stream.nyiregyhazimetodista.hu"
+
+[[d1_databases]]
+binding = "SEARCH_DB"
+database_name = "search_translations"
+database_id = "106a5169-cdfd-4c9e-96df-3a8bd5d1f2f2"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[env.production]
+vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "http://localhost:3000,https://*.nyiregyhazimetodista.hu,https://stream.nyiregyhazimetodista.hu,http://stream.nyiregyhazimetodista.hu" }
+
+[[env.production.d1_databases]]
+binding = "SEARCH_DB"
+database_name = "search_translations"
+database_id = "106a5169-cdfd-4c9e-96df-3a8bd5d1f2f2"
+
+[[env.production.routes]]
+pattern = "api.nyiregyhazimetodista.hu/*"
+zone_name = "nyiregyhazimetodista.hu"
+
+[env.staging]
+vars = { ENVIRONMENT = "staging", ALLOWED_ORIGINS = "http://localhost:3000,https://*.nyiregyhazimetodista.hu,https://stream.nyiregyhazimetodista.hu,http://stream.nyiregyhazimetodista.hu" }
+
+[[env.staging.d1_databases]]
+binding = "SEARCH_DB"
+database_name = "search_translations"
+database_id = "106a5169-cdfd-4c9e-96df-3a8bd5d1f2f2"
